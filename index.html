@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Mapa de secretos de Leonida · GTA VI</title>
+<style>
+:root{
+  --bg:#0d0b14; --panel:#16131f; --panel2:#1f1a2c; --line:#2e2740; --txt:#f3eefc; --mut:#a39bb8;
+  --sea1:#0f2a3d; --sea2:#0a1c2b; --land:#2a3b2c; --land2:#33492f; --sand:#6b5d3d;
+  --acc:#ff5fa2; --acc2:#ffb347;
+  --c-sec:#b57bff; --c-egg:#ff7ad1; --c-rare:#ffd24a; --c-hid:#ff8a3d; --c-veh:#5fe0a0; --c-wpn:#5cb8ff; --c-mis:#ff4f5e; --c-mil:#9bd34a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100%}
+header{padding:10px 12px 8px;background:linear-gradient(90deg,#2a0f2e,#1b1230 55%,#0f2233);border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:center;gap:10px}
+h1{font-size:17px;margin:0;letter-spacing:.3px;line-height:1.15}
+h1 span{background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{font-size:11px;color:var(--mut);margin-top:2px}
+.prog{margin-left:auto;text-align:right;font-size:11px;color:var(--mut);white-space:nowrap}
+.prog b{display:block;font-size:16px;color:var(--txt)}
+.bar{height:4px;background:#ffffff14;border-radius:4px;margin-top:4px;overflow:hidden;width:90px;margin-left:auto}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .3s}
+.search{margin-top:8px;display:flex;gap:6px}
+.search input{flex:1;background:#00000040;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:9px 11px;font-size:14px;outline:none}
+.search input:focus{border-color:var(--acc)}
+.search button{background:#00000040;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:0 11px;font-size:13px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:8px 0 2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:flex;align-items:center;gap:5px;border:1px solid var(--line);background:#00000033;color:var(--txt);border-radius:999px;padding:5px 10px;font-size:12px;cursor:pointer;user-select:none}
+.chip .dot{width:9px;height:9px;border-radius:50%}
+.chip.off{opacity:.38}
+.chip small{color:var(--mut)}
+main{flex:1;position:relative;min-height:0;display:flex}
+#mapWrap{flex:1;position:relative;overflow:hidden;touch-action:none;background:radial-gradient(ellipse at 60% 40%,var(--sea1),var(--sea2))}
+svg#map{width:100%;height:100%;display:block;cursor:grab}
+svg#map.drag{cursor:grabbing}
+.region{font-size:15px;fill:#ffffff55;font-weight:700;letter-spacing:2px;text-anchor:middle;pointer-events:none;text-transform:uppercase}
+.place{font-size:9px;fill:#ffffffa0;text-anchor:middle;pointer-events:none}
+.pin{cursor:pointer}
+.pin circle.b{stroke:#0d0b14;stroke-width:1.6}
+.pin text{font-size:9px;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.pin.found circle.b{opacity:.35}
+.pin.found text{opacity:.4}
+.pin.sel circle.ring{stroke:#fff;stroke-width:2;fill:none}
+.zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px;z-index:3}
+.zoom button{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:#16131fe6;color:var(--txt);font-size:18px}
+.legendNote{position:absolute;left:8px;bottom:8px;font-size:10px;color:#ffffff80;background:#0008;padding:4px 7px;border-radius:6px;pointer-events:none;max-width:70%}
+#card{position:absolute;left:8px;right:8px;bottom:8px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;z-index:5;box-shadow:0 10px 40px #000a;transform:translateY(130%);transition:transform .25s;max-height:62%;overflow:auto}
+#card.show{transform:none}
+#card .cat{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+#card h2{margin:4px 0 2px;font-size:18px}
+#card .where{font-size:12px;color:var(--mut);margin-bottom:8px}
+#card .row{font-size:13.5px;line-height:1.45;margin:6px 0}
+#card .row b{color:#fff}
+#card .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:#ffffff12;border:1px solid var(--line);margin:2px 4px 0 0}
+#card .tag.warn{border-color:#ff4f5e88;color:#ff9aa3}
+#card .actions{display:flex;gap:8px;margin-top:10px}
+#card .actions button{flex:1;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);font-size:13.5px}
+#card .actions button.on{background:linear-gradient(90deg,#ff5fa2,#ff8a3d);border-color:transparent;font-weight:700}
+#card .x{position:absolute;right:10px;top:8px;background:none;border:0;color:var(--mut);font-size:22px}
+#list{width:340px;background:var(--panel);border-left:1px solid var(--line);overflow:auto}
+.li{display:flex;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;align-items:flex-start}
+.li:active,.li:hover{background:var(--panel2)}
+.li .ic{flex:none;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px}
+.li .t{font-size:14px;font-weight:600}
+.li .w{font-size:11.5px;color:var(--mut);margin-top:2px}
+.li.found .t{text-decoration:line-through;opacity:.55}
+.li .ck{margin-left:auto;font-size:16px;opacity:.8}
+.listHead{position:sticky;top:0;background:var(--panel);padding:10px 12px;font-size:12px;color:var(--mut);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;z-index:1}
+.listHead label{display:flex;gap:5px;align-items:center}
+.tabs{display:none}
+@media (max-width:760px){
+  #list{display:none;position:absolute;inset:0;width:auto;border:0;z-index:4}
+  body.listMode #list{display:block}
+  .tabs{display:flex;border-top:1px solid var(--line);background:var(--panel)}
+  .tabs button{flex:1;padding:11px;background:none;border:0;color:var(--mut);font-size:14px;font-weight:600}
+  .tabs button.act{color:var(--txt);box-shadow:inset 0 2px 0 var(--acc)}
+}
+.info{padding:12px;font-size:11.5px;color:var(--mut);line-height:1.5}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <div class="top">
+    <div>
+      <h1><span>Secretos de Leonida</span></h1>
+      <div class="sub">Mapa no oficial de GTA VI · lo que hay que buscar</div>
+    </div>
+    <div class="prog"><b id="pCount">0/0</b>encontrados<div class="bar"><i id="pBar"></i></div></div>
+  </div>
+  <div class="search">
+    <input id="q" type="search" placeholder="Buscar: Infernus, búnker, OVNI, Hamlet…" autocomplete="off">
+    <button id="allBtn">Todo</button>
+  </div>
+  <div style="display:flex;gap:6px;margin-top:6px">
+    <button id="goBase" style="flex:1;background:#9bd34a22;border:1px solid #9bd34a77;color:#dff5b8;border-radius:10px;padding:7px;font-size:12.5px">🪖 Ir a la base militar</button>
+    <a href="https://mapgenie.io/grand-theft-auto-6/maps/leonida" style="flex:1;text-align:center;background:#00000040;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:7px;font-size:12.5px;text-decoration:none">🗺️ Ver mapa real ↗</a>
+  </div>
+  <div class="chips" id="chips"></div>
+</header>
+<main>
+  <div id="mapWrap">
+    <svg id="map" viewBox="0 0 1000 1080" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="landG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#3a4a2c"/><stop offset=".55" stop-color="#2c4430"/><stop offset="1" stop-color="#26402f"/>
+        </linearGradient>
+        <pattern id="swamp" width="14" height="14" patternUnits="userSpaceOnUse">
+          <path d="M2 10 q3 -4 6 0 M8 4 q3 -4 6 0" stroke="#5f8a5a" stroke-width="1" fill="none" opacity=".55"/>
+        </pattern>
+        <radialGradient id="cityG"><stop offset="0" stop-color="#ff5fa255"/><stop offset="1" stop-color="#ff5fa200"/></radialGradient>
+        <filter id="glow"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <g id="world">
+        <!-- Esquema original y aproximado del estado ficticio de Leonida -->
+        <path d="M70 70 L940 60 L950 250 L905 300 L880 420 L875 540 L880 640 L860 760 L820 840 L760 880 L700 860 L640 800 L600 760 L540 790 L470 770 L420 720 L370 690 L330 620 L310 540 L330 470 L300 410 L250 360 L170 340 L110 300 L70 250 Z"
+              fill="url(#landG)" stroke="#c9b27a" stroke-width="2.5" stroke-opacity=".55"/>
+        <!-- humedales -->
+        <path d="M400 560 Q470 520 560 560 Q640 600 650 700 Q620 770 540 760 Q460 760 420 700 Q380 640 400 560Z" fill="url(#swamp)" opacity=".9"/>
+        <!-- montañas -->
+        <g fill="#5b6a52" stroke="#8f9c7f" stroke-width="1" opacity=".9">
+          <path d="M340 175 l25 -45 l25 45z"/><path d="M375 180 l30 -58 l30 58z"/><path d="M420 182 l22 -40 l22 40z"/><path d="M300 190 l18 -30 l18 30z"/>
+        </g>
+        <!-- cañón -->
+        <path d="M130 185 q30 20 20 55 q-10 30 25 50" stroke="#a06a3d" stroke-width="7" fill="none" opacity=".7" stroke-linecap="round"/>
+        <!-- lagos -->
+        <ellipse cx="560" cy="470" rx="55" ry="42" fill="#1a4b66" stroke="#5aa9c9" stroke-opacity=".5"/>
+        <ellipse cx="545" cy="150" rx="22" ry="13" fill="#1a4b66" stroke="#5aa9c9" stroke-opacity=".5"/>
+        <ellipse cx="425" cy="700" rx="22" ry="15" fill="#1a4b66" stroke="#5aa9c9" stroke-opacity=".5"/>
+        <!-- ríos -->
+        <path d="M560 512 Q580 600 560 660 Q545 720 560 780" stroke="#3f88ad" stroke-width="3" fill="none" opacity=".6"/>
+        <path d="M440 190 Q480 260 520 300 Q550 360 545 430" stroke="#3f88ad" stroke-width="2.5" fill="none" opacity=".6"/>
+        <!-- carreteras -->
+        <g stroke="#e8d9a8" stroke-opacity=".28" stroke-width="3" fill="none" stroke-linecap="round">
+          <path d="M220 290 L360 300 L560 330 L700 420 L800 600 L820 720"/>
+          <path d="M430 160 L520 200 L560 330"/>
+          <path d="M800 700 L700 860 L640 930 L520 975 L320 1010"/>
+          <path d="M440 640 L560 640 L760 680"/>
+        </g>
+        <!-- islas oeste -->
+        <g fill="url(#landG)" stroke="#c9b27a" stroke-opacity=".5">
+          <ellipse cx="255" cy="455" rx="22" ry="12"/><ellipse cx="232" cy="482" rx="11" ry="7"/>
+          <ellipse cx="300" cy="615" rx="12" ry="7"/><ellipse cx="318" cy="640" rx="9" ry="6"/><ellipse cx="290" cy="648" rx="8" ry="5"/>
+          <ellipse cx="350" cy="752" rx="9" ry="6"/>
+          <ellipse cx="150" cy="700" rx="16" ry="10"/>
+        </g>
+        <!-- islas de Vice City -->
+        <g fill="#3a4636" stroke="#c9b27a" stroke-opacity=".5">
+          <ellipse cx="905" cy="700" rx="10" ry="55"/><ellipse cx="880" cy="650" rx="10" ry="6"/><ellipse cx="878" cy="690" rx="8" ry="5"/><ellipse cx="878" cy="722" rx="9" ry="5"/><ellipse cx="890" cy="605" rx="9" ry="6"/>
+        </g>
+        <!-- cayos -->
+        <g fill="url(#landG)" stroke="#c9b27a" stroke-opacity=".55">
+          <ellipse cx="700" cy="905" rx="30" ry="9" transform="rotate(-25 700 905)"/>
+          <ellipse cx="640" cy="935" rx="34" ry="11" transform="rotate(-18 640 935)"/>
+          <ellipse cx="565" cy="962" rx="24" ry="7" transform="rotate(-12 565 962)"/>
+          <ellipse cx="500" cy="978" rx="20" ry="6" transform="rotate(-8 500 978)"/>
+          <ellipse cx="470" cy="955" rx="9" ry="5"/><ellipse cx="455" cy="1000" rx="10" ry="5"/>
+          <ellipse cx="420" cy="995" rx="17" ry="6"/>
+          <ellipse cx="370" cy="1003" rx="15" ry="5"/>
+          <ellipse cx="318" cy="1012" rx="46" ry="17"/>
+          <ellipse cx="362" cy="996" rx="12" ry="6"/>
+        </g>
+        <!-- base militar: valla y pista -->
+        <rect x="280" y="998" width="74" height="28" rx="4" fill="none" stroke="#9bd34a" stroke-width="1.2" stroke-dasharray="3 2" opacity=".8"/>
+        <line x1="286" y1="1004" x2="348" y2="1004" stroke="#d8d8d8" stroke-width="3" opacity=".45"/>
+        <!-- brillo ciudad -->
+        <circle cx="815" cy="680" r="110" fill="url(#cityG)"/>
+        <!-- etiquetas de región -->
+        <text class="region" x="430" y="105">Lummox County</text>
+        <text class="region" x="190" y="155">Kelly County</text>
+        <text class="region" x="620" y="290">Ambrosia</text>
+        <text class="region" x="735" y="470">Leonard Co.</text>
+        <text class="region" x="400" y="530">Mariana County</text>
+        <text class="region" x="560" y="610">Grassrivers</text>
+        <text class="region" x="800" y="780">Vice City</text>
+        <text class="region" x="520" y="1050">Leonida Keys</text>
+        <text class="place" x="560" y="474">Lake Leonida</text>
+        <text class="place" x="245" y="320">Port Gellhorn</text>
+        <text class="place" x="440" y="660">Hamlet</text>
+        <text class="place" x="640" y="955">Key Lento</text>
+        <text class="place" x="316" y="1040">Mile Zero Air Station (Goose Key)</text>
+        <text class="place" x="368" y="984">Southwind</text>
+        <text class="place" x="270" y="440">Bobcat Bight</text>
+        <text class="place" x="290" y="600">Wetman Bay</text>
+        <text class="place" x="330" y="735">Gambit Bay</text>
+        <text class="place" x="470" y="980" dy="-12">Permit Keys</text>
+        <text class="place" x="395" y="140">Mt. Kalaga</text>
+        <text class="place" x="520" y="225">Millport</text>
+        <text class="place" x="150" y="270">Manifest Canyon</text>
+        <g id="pins"></g>
+      </g>
+    </svg>
+    <div class="zoom"><button id="zin">+</button><button id="zout">−</button><button id="zreset" style="font-size:14px">⟲</button></div>
+    <div class="legendNote">Esquema propio y aproximado: las posiciones orientan sobre la zona, no son el mapa oficial.</div>
+    <div id="card"></div>
+  </div>
+  <aside id="list"></aside>
+</main>
+<div class="tabs"><button id="tMap" class="act">🗺️ Mapa</button><button id="tList">📋 Lista</button></div>
+</div>
+
+<script>
+const CATS = {
+  sec:{n:"Secretos y misterios",c:"var(--c-sec)",i:"👽"},
+  mis:{n:"Misiones secretas",c:"var(--c-mis)",i:"❗"},
+  rare:{n:"Coches exclusivos",c:"var(--c-rare)",i:"🏎️"},
+  hid:{n:"Coches escondidos",c:"var(--c-hid)",i:"🔑"},
+  mil:{n:"Material militar",c:"var(--c-mil)",i:"🪖"},
+  veh:{n:"Aviones y helicópteros",c:"var(--c-veh)",i:"🚁"},
+  wpn:{n:"Armas ocultas",c:"var(--c-wpn)",i:"🔫"},
+  egg:{n:"Easter eggs",c:"var(--c-egg)",i:"🥚"}
+};
+// x,y en el esquema; d = qué es; h = cómo conseguirlo; r = recompensa; t = etiquetas; w = zona
+const P = [
+// ---- SECRETOS
+{id:"glider",c:"sec",x:250,y:455,n:"Planeador estrellado",w:"Bobcat Bight · islas al NO de North Mariana County",d:"Restos de un planeador con el paracaídas enganchado en un árbol.",h:"Llega en barco o moto de agua. Dispara al paracaídas colgado para que caigan los restos y registra la zona.",r:"Pistola legendaria Turnt Nipper .38",t:["Necesitas barco"]},
+{id:"sos",c:"sec",x:150,y:700,n:"Isla SOS",w:"Golfo de Leonida, muy al oeste de Watson Bay",d:"Isla perdida con un SOS escrito en la arena.",h:"Busca en el suelo junto a la primera «S» del mensaje.",r:"Un móvil con una grabación estilo «metraje encontrado»; también se han visto fragmentos de meteorito",t:["Necesitas barco"]},
+{id:"cooldog",c:"sec",x:270,y:735,n:"Cool Dog y la playa secreta de perros",w:"Mar abierto al oeste · Gambit Bay",d:"Un perro en moto de agua te rescata si te quedas tirado en el mar.",h:"Abandona tu barco y nada mar adentro sin vehículo. Es aleatorio: si no aparece, prueba en otra zona del mar.",r:"Te lleva a una playa escondida llena de perros",t:["Aleatorio"]},
+{id:"meteor",c:"sec",x:420,y:150,n:"Meteorito morado",w:"Mount Kalaga · ladera este de Table Rock",d:"Un objeto morado sin explicación caído del cielo.",h:"Sube a la cima de Table Rock y baja por el lado este. Mejor en moto o todoterreno; busca entre hondonadas rocosas y vegetación.",r:"Pista del misterio de los meteoritos",t:[]},
+{id:"bunker",c:"sec",x:385,y:128,n:"Torre y búnker secreto",w:"Parque Nacional Mount Kalaga · Lummox County",d:"Torre con escalera y una caseta de madera cerrada con teclado.",h:"Sube la escalera de la torre: en los carteles de arriba hay una combinación. Baja y métela en el teclado de la caseta.",r:"Cuaderno de registro con el dibujo de una figura misteriosa",t:["Código 69185"]},
+{id:"ufohouse",c:"sec",x:690,y:412,n:"La casa del paranoico",w:"Belville · Leonard County",d:"Casa clara de una planta con puerta de garaje blanca, dos palmeras y valla blanca.",h:"Fuerza la puerta del garaje (si te ven, viene la policía). Dentro hay notas de alguien convencido de vivir en un videojuego, con referencias a «J» y «L». Ojo con el maletero del coche de fuera: salen serpientes.",r:"Lore / curiosidad",t:["Puede atraer policía"]},
+{id:"ufo",c:"sec",x:300,y:305,n:"Abducción OVNI",w:"Bosque junto al Starlet Motel · al este de Port Gellhorn",d:"Un coche con luces parpadeando en la cuneta y un rastro hacia el bosque.",h:"Tras el Capítulo 1, ve sobre las 2:00 de la madrugada, mejor sin el otro protagonista. Sigue el rastro, ponte debajo del OVNI para cortar la abducción, habla con la mujer y devuélvele el coche. No sale todas las veces.",r:"Logro «The Truth Is Out There» y arranque de la cadena del alien",t:["Noche","Tras Cap. 1"]},
+{id:"monument",c:"sec",x:145,y:240,n:"Monumento a la Supremacía Leonidana",w:"Manifest Canyon · Kelly County",d:"Monumento con marcas y símbolos raros y sonidos extraños.",h:"Examina las marcas. Todavía nadie lo ha resuelto: puede que haga falta algo más del juego.",r:"Sin resolver",t:["Sin resolver"]},
+{id:"skunk",c:"sec",x:410,y:715,n:"Skunk Ape (el «Bigfoot» de Leonida)",w:"Humedales al sur de Hamlet · Cottonmouth Lake",d:"Criatura que vigila el cadáver de un ciervo.",h:"Encuentra el cadáver, sigue a la criatura al bosque hasta una figura humana hecha de ramas y examínala. Las misiones relacionadas empiezan con el folleto de Kirk.",r:"Encuentro paranormal",t:["Noche"]},
+{id:"ritual",c:"sec",x:790,y:595,n:"Ritual en el almacén de Capri",w:"Norte de Capri · Vice City",d:"Un pentagrama y un ritual inquietante en un almacén abandonado.",h:"Entra en el almacén abandonado del norte de Capri y explóralo a fondo.",r:"Escena secreta",t:["Ubicación aproximada"]},
+{id:"eggs",c:"sec",x:745,y:800,n:"Huevos de Pascua «literales»",w:"Torre de comunicaciones · sur de Vice-Dale County",d:"Un nido con huevos en lo alto de una torre altísima.",h:"Sube por las escaleras exteriores (6-7 minutos reales). Coge un huevo y lánzalo desde el borde con toda la fuerza: si lo tiras flojo no salta la escena.",r:"Escena cómica oculta",t:[]},
+// ---- MISIONES SECRETAS
+{id:"alien",c:"mis",x:465,y:675,n:"Sueños alienígenas · rescata al alien",w:"South Point Airfield · Hamlet (Mariana County)",d:"Continuación del OVNI: sueño alienígena, puzles y una instalación secreta.",h:"Haz antes la abducción OVNI. Investiga, resuelve los puzles y entra en el laboratorio subterráneo bajo el edificio de la torre de radio del aeródromo para liberar al pequeño alien.",r:"Mejoras permanentes de salud, resistencia y concentración para los dos protagonistas + trofeo",t:["Cap. 2+"]},
+{id:"merle",c:"mis",x:798,y:625,n:"Dr. Merle · No Flushers",w:"Frank's Waffles · Tequesta (Vice City)",d:"Misión oculta que empieza con un póster.",h:"Encuentra y escanea un póster de «No Flushers», responde TRUTH al mensaje y queda con el Dr. Merle en Frank's Waffles. Incluye la misión escondida «The Final Flush».",r:"Aumento permanente de resistencia",t:["Sin capítulo mínimo"]},
+{id:"freddie",c:"mis",x:560,y:405,n:"Freddie · el reto del búnker",w:"Complejo al norte de Lake Leonida",d:"Un búnker escondido en la finca de Freddie.",h:"Localiza su complejo al norte del lago y entra en el búnker oculto.",r:"10.000 $ y desbloquea el clima de huracán",t:["Sin capítulo mínimo"]},
+{id:"kirk",c:"mis",x:385,y:600,n:"Kirk · caza del Skunk Ape",w:"Folletos en el Rusty Anchor (Key Lento) o Skeeter's (Hamlet)",d:"Cadena de 3 misiones de caza del críptido.",h:"Coge el folleto, llama a Kirk y ve de noche a su zona del pantano (cerca de Thorp Adventures, Pelican Valley). La última misión sale en el Cap. 2, con Lucía y de noche.",r:"Rifle Mister Mangrove Laird 350 y hasta 11.000 $",t:["Noche","Cap. 1 → 2"]},
+{id:"missing",c:"mis",x:228,y:300,n:"Personas desaparecidas · asesino en serie",w:"Starlet Motel → almacén frente al taller de Moses · Port Gellhorn",d:"Investigación sin marcar ligada a la línea de chivatazos de Kelly County.",h:"Examina los carteles de desaparecidos del Starlet Motel y luego entra en el almacén abandonado que hay enfrente del taller de Moses.",r:"Por confirmar",t:["Cap. 2"]},
+{id:"dodo",c:"mis",x:745,y:665,n:"Dodo Rising · protesta animalista",w:"Oceanario de Vice City y santuario de Bluegrass (junto al aeropuerto)",d:"Misiones que se descubren acercándote a protestas o con la cámara.",h:"Acércate a las protestas por los animales frente al Oceanario o al santuario de chimpancés de Bluegrass, o hazles foto con el móvil. Lleva a infiltrarte en el santuario.",r:"Cadena de misiones",t:[]},
+{id:"shirley",c:"mis",x:655,y:925,n:"Shirley · el ron y el scooter",w:"Key Lento (vecina de Jason)",d:"Dos encargos de la vecina de Jason.",h:"Ve a la licorería de los Cayos a por su ron (pelea en las jaulas de loros de atrás) y róbale un scooter de movilidad a un vecino.",r:"Alijo de unos 1.300 $",t:["¡Perdible! Solo Cap. 1"]},
+{id:"jasonhouse",c:"mis",x:628,y:940,n:"Casa de Jason · coleccionables perdibles",w:"Key Lento",d:"Cosas que solo puedes coger en el Capítulo 1.",h:"Coge las 5 revistas (mesa de centro, escritorio junto a la radio, mesilla, porche trasero y cobertizo bajo la casa) y haz la meditación de la casa antes de avanzar.",r:"Coleccionables",t:["¡Perdible! Solo Cap. 1"]},
+// ---- COCHES EXCLUSIVOS
+{id:"infernus",c:"rare",x:775,y:690,n:"Pegassi Infernus ('96)",w:"Comisaría de Crosstown, 9th St · al este de Rockridge Hospital",d:"Superdeportivo clásico, uno de los más buscados.",h:"Espera a que se abra la puerta del parking, sube por las rampas hasta la 7.ª planta sin que te vean los guardias y usa el clonador de llaves. Comprueba si lleva rastreador antes de ir a Randy.",r:"Coche",t:["Key Cloner","Vigilado"]},
+{id:"emerus",c:"rare",x:880,y:690,n:"Royal Ruby Emerus",w:"Garaje de mansión · Vespucci Island / Neptune Circle",d:"Hiperdeportivo con nitro, de los más rápidos del juego (~33.000 $).",h:"Hay guardias en la puerta: salta el seto, entra al patio y ve al garaje.",r:"Coche con nitro",t:["Muy vigilado","Sin rastreador"]},
+{id:"vitello",c:"rare",x:735,y:432,n:"Pegassi Vitello + Itali RSX + Dubsta",w:"Villa cerrada de Flamingo Parkway · Waning Sands",d:"Tres coches en el mismo garaje.",h:"Salta la valla. Mirando a la casa, el garaje está a la derecha: abre el más cercano a la casa. Planea la salida por el camino de entrada antes de arrancar.",r:"3 coches",t:["Key Cloner"]},
+{id:"furia",c:"rare",x:835,y:600,n:"Piccia Furia",w:"Villa de Palladia Lane · Peacock Estates (Peacock Bay)",d:"Superdeportivo en garaje privado.",h:"Coge el camino a la izquierda de la verja, salta el seto, pasa entre el agua y el garaje, entra por la puerta lateral y abre la persiana antes de salir.",r:"Coche",t:["Allanamiento"]},
+{id:"mamba",c:"rare",x:760,y:648,n:"Mamba GT",w:"Mansión de Leaf Links (misión «¡Dale Mamba!»)",d:"Detrás del edificio de la derecha de la finca.",h:"Con la Snap Gun entra en la casa principal (detrás de la piscina). La llave está en un cuenco en la mesa de detrás del sofá.",r:"Coche",t:["Snap Gun"]},
+{id:"toros",c:"rare",x:765,y:722,n:"Charred Toros (tipo Urus)",w:"Trap house de La Perle · Vice City",d:"SUV de lujo con acabado especial; muy recomendable al principio.",h:"Entra en la trap house y llévatelo. No lleva rastreador y es barato de registrar.",r:"Coche",t:["Sin rastreador","Fácil"]},
+{id:"thrax",c:"rare",x:705,y:240,n:"Truffade Thrax",w:"Final de la lista de Randy",d:"El hipercoche que cierra la lista de deseos de Randy.",h:"Completa la misión del Cap. 3 que desbloquea el clonador y la lista de Randy, y ve tachando coches hasta el final.",r:"Hipercoche",t:["Cap. 3","Misión"]},
+{id:"sultan",c:"rare",x:258,y:285,n:"Emperor Sultan de Moses",w:"Taller de Moses · Port Gellhorn",d:"El Sultan personalizado de Moses: no se puede robar.",h:"Entrégale a Moses los 7 coches que te pide (la mayoría están por Port Gellhorn; el BF Bandito y el Western Nightblade, por Ambrosia).",r:"Coche único",t:["Recompensa"]},
+{id:"purple",c:"rare",x:700,y:790,n:"Purple Drank Emerus",w:"Patio de contenedores del puerto",d:"Otro Emerus con nitro.",h:"Sale como oportunidad de golpe en el Capítulo 3. Está vigilado.",r:"Coche con nitro",t:["Cap. 3","Vigilado"]},
+// ---- COCHES ESCONDIDOS
+{id:"penumbra",c:"hid",x:870,y:710,n:"Maibatsu '97 Penumbra FF («el coche de Paul Walker»)",w:"Villa de Vespucci Island · puente Rialto Islands al oeste de Vice Beach",d:"Se puede robar muy pronto. Hay sorpresa en el maletero.",h:"Salta el seto y pasa la puerta verde pequeña. Entra por la puerta lateral junto al portón; si salta la alarma, desactívala en el panel de la pared izquierda. Abre el portón desde dentro.",r:"Coche (registro ~6.750 $)",t:["Sin rastreador"]},
+{id:"elegy",c:"hid",x:240,y:262,n:"Annis Drifter Elegy ('90)",w:"Taller Qwick-Fix tras la recta de drag · Gellhorn International Raceway",d:"El coche de drift perfecto.",h:"Entra por la puerta lateral, cruza las oficinas y llega al garaje. Regístralo con Moses en Port Gellhorn.",r:"Coche (registro ~14.000 $)",t:["Alarma","Rastreador"]},
+{id:"dominator",c:"hid",x:212,y:312,n:"Firebug Dominator",w:"La Cascara Motel · Port Gellhorn",d:"Muscle car recomendado para empezar.",h:"Lo vigila la banda Kolts. Sin rastreador.",r:"Coche",t:["Vigilado"]},
+{id:"gauntlet",c:"hid",x:460,y:645,n:"Gauntlet Hellfire / Devil's Rope Gauntlet",w:"Chatarrería M7 · Hamlet (este de Boone Speedway, por Galerina St)",d:"Muscle car en el garaje de los moteros.",h:"Lo guardan bikers. Entra por la claraboya o abre la verja desde dentro, ve por el borde derecho hasta el fondo y mira entre los contenedores.",r:"Coche",t:["Bikers"]},
+{id:"containers",c:"hid",x:345,y:470,n:"Royal Sanchez + Caliente Picador",w:"Patio de contenedores · North Mariana County",d:"Dos vehículos encerrados en contenedores.",h:"El Sanchez está en el contenedor naranja (necesitas el abrecajas). Para el Picador, aparta los otros contenedores con el bulldozer y abre el amarillo.",r:"2 vehículos",t:["Abrecajas","Bulldozer"]},
+{id:"golfer",c:"hid",x:890,y:650,n:"Brimstone Golfer",w:"Garaje de mansión · Penmarch Isle",d:"Un carrito de golf en llamas. Sí, en serio.",h:"El garaje no tiene seguridad: entra y llévatelo.",r:"Vehículo",t:["Fácil"]},
+{id:"copper",c:"hid",x:590,y:340,n:"Copperheads Gauntlet",w:"Garaje en Ambrosia",d:"Variante especial del Gauntlet.",h:"Alarma estándar.",r:"Coche + desbloquea un vinilo",t:[]},
+{id:"jugular",c:"hid",x:705,y:395,n:"Bloodless Jugular",w:"Garaje junto a una casa blanca · Leonard County",d:"Coche especial en garaje particular.",h:"Necesitas el clonador de llaves.",r:"Coche",t:["Key Cloner"]},
+{id:"ruiner",c:"hid",x:675,y:915,n:"Turbo Ruiner",w:"Casa al este de la de Jason · Key Lento",d:"Aparece de día, sin alarma.",h:"Ve de día a la casa al este de la de Jason.",r:"Coche (registro ~6.000 $)",t:["De día"]},
+{id:"skyline",c:"hid",x:850,y:740,n:"Elegy tipo Skyline",w:"Mansión vigilada · Starfish Island",d:"Sin alarma ni rastreador, pero con la carrocería dañada.",h:"Cuélate en la finca vigilada, llévatelo y repáralo en un Vice Auto Customs.",r:"Coche",t:["Vigilado"]},
+{id:"banshee",c:"hid",x:780,y:585,n:"Bravado Banshee",w:"Parking del Sweetbay Inn · Capri (East Buckley Dr)",d:"Aparece de madrugada.",h:"Visto sobre las 3:00. Si no está, vuelve otra noche.",r:"Coche",t:["~3:00"]},
+{id:"tempesta",c:"hid",x:815,y:668,n:"Pegassi Tempesta",w:"NE 3rd Street · Vice City",d:"Una grúa se lo está llevando.",h:"Sobre las 13:00. Espera a que el dueño deje de pelearse y usa la opción de soltarlo de la grúa.",r:"Coche",t:["~13:00"]},
+{id:"paragon",c:"hid",x:885,y:745,n:"Ascot Paragon",w:"Banana Hole Main Bar · Ocean Beach (Shore Dr)",d:"Aparcado a última hora de la tarde.",h:"Visto sobre las 18:00. Si no está, repite otro día a la misma hora.",r:"Coche",t:["~18:00"]},
+{id:"toros2",c:"hid",x:805,y:640,n:"Pegassi Toros",w:"Pegassi Residences · Tequesta (Bayside Dr)",d:"En los aparcamientos de la entrada.",h:"Visto sobre las 18:30.",r:"Coche",t:["~18:30"]},
+{id:"growler",c:"hid",x:868,y:760,n:"Pfister Growler",w:"Parking de Fig Street · Ocean Beach",d:"En alguna plaza del parking de varias plantas.",h:"Visto sobre las 17:00: sube planta por planta.",r:"Coche",t:["~17:00"]},
+{id:"ridgway",c:"hid",x:500,y:610,n:"Hauners Ridgway",w:"Búnker secreto · noroeste de Grassrivers",d:"Todoterreno guardado en la entrada de un búnker.",h:"Encuentra el búnker escondido en el NO de Grassrivers.",r:"Vehículo",t:[]},
+{id:"airboat",c:"hid",x:370,y:625,n:"Aerodeslizador del Dr. Sheehan",w:"Muelle del puesto de investigación abandonado · Pelican Valley",d:"Airgator al final del muelle.",h:"Ve al puesto abandonado (el de la VF5) y míralo al final del muelle.",r:"Barco",t:[]},
+// ---- VEHÍCULOS ESPECIALES
+// ---- MATERIAL MILITAR (Mile Zero Air Station, Goose Key)
+{id:"mzbase",c:"mil",x:308,y:1010,n:"Mile Zero Air Station (base militar)",w:"Goose Key · extremo suroeste de los Cayos, junto a Southwind",d:"La única base militar de Leonida: cazas, tanques, helicópteros y blindados.",h:"Abre en el Cap. 1, después de la misión «Gone Fishing». Llegas por los puentes largos desde Key Lento, o en barco, avión o helicóptero. Si los soldados te ven dentro te disparan casi al momento. Todos los vehículos militares llevan rastreador: no se pueden registrar con Moses ni guardarlos en el garaje.",r:"Acceso a todo el material militar",t:["Zona militar","Desde Cap. 1"]},
+{id:"mzjump",c:"mil",x:340,y:1023,n:"Entrada secreta: salto Mile Zero Southeast",w:"Esquina sureste de la base, camino de acceso por el sur",d:"Rampa de tierra justo delante de la alambrada.",h:"Antes de la puerta principal gira a la izquierda, pasa a los guardias, gira a la derecha y coge la rampa a tope: saltas la valla y cuenta como salto acrobático. Saltar no te salva: en cuanto te ven, empieza el tiroteo.",r:"La forma más fácil de entrar + salto acrobático",t:["Velocidad máxima"]},
+{id:"rhino",c:"mil",x:296,y:1020,n:"Tanque Hauners Rhino",w:"Mile Zero · filas largas en la parte sur de la base",d:"Tanques sin cerrar: no hace falta el clonador de llaves.",h:"Tras el salto gira a la izquierda: están en filas, pasado un edificio grande y una valla. Coge el del cañón largo. Se dispara con R1 (PS5) o RB (Xbox). Llegas a 5 y luego 6 estrellas en un minuto o dos.",r:"Tanque + trofeo «Challenging Tank»",t:["Zona militar","6 estrellas"]},
+{id:"lazer",c:"mil",x:318,y:1001,n:"Caza Hauners P-996 Lazer",w:"Mile Zero · zona norte, junto a hangares y pista",d:"Una fila de unos 20 cazas con ametralladoras y misiles.",h:"Ve por la pista, pasa los helicópteros y llega a la fila de cazas. Sube con Triángulo (PS5) o Y (Xbox), acelera con R2/RT y tira hacia atrás del stick izquierdo. Despega rápido: si tardas, aparecen tanques que te destrozan el avión. Al despegar, 5 estrellas y dos cazas detrás de ti.",r:"Caza",t:["Zona militar","5 estrellas"]},
+{id:"buzzard",c:"mil",x:303,y:1003,n:"Helicóptero de ataque Botticher Buzzard",w:"Mile Zero · su propia zona de aparcamiento junto a la pista",d:"Helicóptero de ataque: tarda en arrancar, pero en el aire es muy ágil.",h:"Despeja a los soldados de alrededor antes de subir, porque tarda unos segundos en arrancar.",r:"Helicóptero de ataque",t:["Zona militar"]},
+{id:"valkyrie",c:"mil",x:328,y:1012,n:"Helicóptero Buckingham Valkyrie",w:"Mile Zero · cerca de la entrada principal (según la comunidad)",d:"Helicóptero militar artillado.",h:"Búscalo cerca de la puerta principal nada más entrar.",r:"Helicóptero",t:["Zona militar","Sin confirmar"]},
+{id:"cargobob",c:"mil",x:287,y:1008,n:"Helicóptero de carga Hauners Cargobob",w:"Mile Zero · zona de helicópteros",d:"El helicóptero de carga pesada.",h:"Su sitio exacto aún no está confirmado: recorre la zona de helicópteros de la pista.",r:"Helicóptero de carga",t:["Zona militar","Sin confirmar"]},
+{id:"apc",c:"mil",x:348,y:1016,n:"Blindado Hauners APC (con cohetes)",w:"Mile Zero · aparcamiento de vehículos de tierra; a veces uno fuera de la valla junto a la rampa",d:"Blindado de transporte con cohetes montados.",h:"Mira primero fuera de la alambrada, junto a la rampa del salto: a veces hay uno ahí y te lo llevas sin entrar.",r:"Blindado",t:["Zona militar"]},
+{id:"mzother",c:"mil",x:312,y:1022,n:"Mammoth Patriot y avioneta Botticher 015A",w:"Mile Zero · aparcamientos de la base",d:"Un todoterreno militar y una avioneta que también se pueden coger en la base.",h:"La avioneta está en la zona de los aviones normales. El Patriot no tiene sitio fijo confirmado.",r:"Vehículos",t:["Zona militar"]},
+{id:"heli1",c:"veh",x:550,y:165,n:"Helicóptero grande",w:"Helipuerto de la urbanización Lake Tallaloko · norte de Millport",d:"Helicóptero en una urbanización cerrada.",h:"Cuélate en la urbanización cerrada.",r:"Helicóptero",t:["Allanamiento"]},
+{id:"heli2",c:"veh",x:800,y:700,n:"Helicóptero en azotea",w:"Azotea de Maven Residences · Vice City",d:"Al lado hay un salto BASE con paracaídas gratis.",h:"Sube a la azotea: sin requisitos.",r:"Helicóptero + paracaídas",t:["Fácil"]},
+{id:"floatplanes",c:"veh",x:358,y:1000,n:"Hidroaviones de Southwind",w:"Southwind · justo al lado de la base militar",d:"Hidroaviones aparcados que te puedes llevar sin estrellas.",h:"Coge uno y aterriza en el agua o úsalo para lanzarte en paracaídas sobre la base.",r:"Hidroavión",t:["Sin estrellas"]},
+{id:"swheli",c:"veh",x:366,y:990,n:"Helipuerto de Southwind",w:"Southwind",d:"Helicóptero para entrar volando en Mile Zero.",h:"Coge el helicóptero y aterriza dentro de la base, junto al vehículo militar que quieras.",r:"Helicóptero",t:["Sin estrellas"]},
+{id:"kellystrip",c:"veh",x:200,y:118,n:"Aeródromo del norte de Kelly County",w:"Norte de Kelly County",d:"Varias avionetas aparcadas a lo largo de la pista.",h:"Ve a la pista y llévate la que quieras.",r:"Avionetas",t:["Sin estrellas"]},
+{id:"marstrip",c:"veh",x:378,y:560,n:"Aeródromos pequeños de Mariana County",w:"Mariana County",d:"En los aeródromos pequeños del condado suele haber una avioneta esperando.",h:"Revisa las pistas pequeñas del condado.",r:"Avionetas",t:["Sin estrellas"]},
+{id:"vcia",c:"veh",x:722,y:682,n:"Aeropuerto Internacional de Vice City",w:"Suroeste de Vice-Dale County, lado oeste de Vice City",d:"Aviones comerciales.",h:"Si entras en la zona restringida te ganas estrellas, como en la base.",r:"Aviones grandes",t:["Te buscan si entras"]},
+{id:"yachts",c:"veh",x:745,y:635,n:"Yates de lujo",w:"Club de campo Leaf Links",d:"Varios yates atracados.",h:"La mayoría necesitan el clonador de llaves.",r:"Barcos",t:["Key Cloner"]},
+// ---- ARMAS
+{id:"nipper",c:"wpn",x:410,y:985,n:"Assassin Nipper .38",w:"Barco varado · extremo sur de una isla estrecha de Permit Keys, al oeste de Maroon Key",d:"Pistola legendaria.",h:"Ve en barco en el juego libre del Cap. 1.",r:"Pistola legendaria",t:["Barco"]},
+{id:"gorse",c:"wpn",x:470,y:952,n:"Smuggler Gorse 425",w:"Junto al barco inclinado · isla más al norte de Permit Keys",d:"Escopeta legendaria.",h:"En barco, desde el Cap. 1.",r:"Escopeta legendaria",t:["Barco"]},
+{id:"w22",c:"wpn",x:318,y:640,n:"Kingfishers W-22",w:"Fishing Shacks · isla central de Wetman Bay",d:"Rifle legendario en una caja dentro de la caseta iluminada.",h:"Zona con mucha vigilancia: entra con silenciador.",r:"Rifle legendario",t:["Vigilado"]},
+{id:"vf5",c:"wpn",x:355,y:640,n:"Crabshack VF5",w:"Puesto de investigación abandonado · SO de Pelican Valley",d:"Subfusil tras un pequeño puzle (y el de los cangrejos gigantes).",h:"Saca la contraseña del PC, abre la caja fuerte y luego la puerta del muelle.",r:"Subfusil",t:["Puzle"]},
+{id:"akulus",c:"wpn",x:395,y:580,n:"Swamp Bait Akulus + SM-69 del cazador",w:"Cabaña en ruinas · Pelican Valley",d:"Revólver en el suelo y rifle en la cubierta lateral de la cabaña.",h:"Entra en la cabaña destrozada; el SM-69 está en la cubierta de un lado.",r:"Revólver + rifle",t:[]},
+{id:"laird",c:"wpn",x:430,y:690,n:"Kingfisher's Laird 350",w:"Manatee Motel · sur de Hamlet",d:"Rifle de francotirador en un maletín.",h:"Busca el maletín en el motel. Hay otro Laird si ayudas al cazador herido Todd en un camino cerca de Hamlet.",r:"Francotirador",t:[]},
+{id:"sm69",c:"wpn",x:615,y:945,n:"SM-69 (francotirador)",w:"Balcón de la torre de control · Key Lento, junto al edificio Badger",d:"Rifle en el balcón.",h:"Sube al balcón de la torre de control.",r:"Francotirador",t:[]},
+{id:"comshot",c:"wpn",x:600,y:925,n:"Unpacked Comshot 12",w:"Casa sobre pilotes · costa NO de Key Lento, junto al Mini Mart",d:"Escopeta gratis.",h:"Entra en la casa sobre pilotes.",r:"Escopeta",t:[]},
+{id:"hobo",c:"wpn",x:450,y:700,n:"Marabunta Grande Hobo",w:"Almacén industrial al sur de Hamlet, junto a la autovía",d:"Escopeta recortada.",h:"Entra en el almacén.",r:"Escopeta recortada",t:[]},
+{id:"conspir",c:"wpn",x:520,y:350,n:"Conspiracist Type 9 + Hauners H-AT",w:"Búnker bajo una caravana azul · frente al Griffin Shooting Range",d:"Alijo de armas de un conspiranoico.",h:"Busca el parque de caravanas vallado frente a la galería de tiro y la caravana azul.",r:"Dos armas",t:["Ubicación sin confirmar"]},
+{id:"safe",c:"wpn",x:480,y:640,n:"Caja fuerte de Apollo Aggregates",w:"Almacén rojo al este de Hamlet",d:"Caja fuerte encima de un archivador.",h:"Al sureste de las tres piscinas rectangulares.",r:"Dinero / tarjeta",t:[]},
+// ---- EASTER EGGS
+{id:"dexter",c:"egg",x:880,y:650,n:"Apartamento de Dexter",w:"Trinity Apartments · Washington Island (NE de Vice City)",d:"Guiño a la serie de TV.",h:"Busca el edificio bajo junto al agua con muelle y mira los barcos: uno se parece al de la serie.",r:"Referencia",t:[]},
+{id:"rdr",c:"egg",x:530,y:212,n:"Libro de Red Dead",w:"Jacob's Tavern · Millport",d:"Una novela del Oeste ambientada en New Austin.",h:"Examina los libros y objetos de la taberna.",r:"Referencia",t:[]},
+{id:"piano",c:"egg",x:350,y:752,n:"Piano en una isla desierta",w:"Islote al sur de Cottonmouth Lake y Gambit Bay",d:"Un piano perdido en mitad de la nada.",h:"Escanéalo con WAiNK.",r:"Escaneo WAiNK",t:[]},
+{id:"xmas",c:"egg",x:612,y:942,n:"Casa de Navidad",w:"Calle más al oeste de Key Lento",d:"Casa decorada de Navidad todo el año.",h:"Escanéala con WAiNK. En la misma calle está el mural de Plunge Masters.",r:"Escaneo WAiNK",t:[]},
+{id:"blimp",c:"egg",x:425,y:995,n:"Dirigible «Thicc Herbie»",w:"Maroon Key (se escanea desde Abismo Key State Park)",d:"Un dirigible enorme.",h:"Solo se puede escanear desde Abismo Key State Park.",r:"Escaneo WAiNK",t:[]},
+{id:"spy",c:"egg",x:510,y:985,n:"Barco espía abandonado",w:"Punta de la isla SE de Permit Keys",d:"Un buque espía encallado.",h:"Escanéalo con WAiNK.",r:"Escaneo WAiNK",t:[]},
+{id:"sharks",c:"egg",x:292,y:650,n:"Playa de tiburones muertos",w:"Islas del sur de Wetman Bay",d:"Tiburones pudriéndose en la arena; al norte hay un cadáver con meteorito.",h:"Escanéalos con WAiNK.",r:"Escaneo WAiNK + pista meteorito",t:[]},
+{id:"radome",c:"egg",x:565,y:972,n:"Radomo de Riquezas Key",w:"Punta sur de Riquezas Keys",d:"Una cúpula de radar misteriosa.",h:"Escanéala con WAiNK.",r:"Escaneo WAiNK",t:[]},
+{id:"whale",c:"egg",x:648,y:928,n:"Wonder Whale",w:"Cruce principal de Key Lento",d:"Estatua de ballena gigante.",h:"Escanéala con WAiNK.",r:"Escaneo WAiNK",t:[]}
+];
+
+// ---------- estado
+let found = {}; let active = new Set(Object.keys(CATS)); let query = ""; let selId = null; let onlyPending = false;
+try{ found = JSON.parse(localStorage.getItem("leo_found")||"{}") }catch(e){}
+function save(){ try{ localStorage.setItem("leo_found",JSON.stringify(found)) }catch(e){} }
+const norm = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+function visible(p){
+  if(!active.has(p.c)) return false;
+  if(onlyPending && found[p.id]) return false;
+  if(!query) return true;
+  return norm([p.n,p.w,p.d,p.h,p.r,(p.t||[]).join(" "),CATS[p.c].n].join(" ")).includes(query);
+}
+
+// ---------- chips
+const chipsEl = document.getElementById("chips");
+function renderChips(){
+  chipsEl.innerHTML = "";
+  for(const k in CATS){
+    const total = P.filter(p=>p.c===k).length, f = P.filter(p=>p.c===k && found[p.id]).length;
+    const b = document.createElement("div");
+    b.className = "chip"+(active.has(k)?"":" off");
+    b.innerHTML = `<span class="dot" style="background:${CATS[k].c}"></span>${CATS[k].i} ${CATS[k].n} <small>${f}/${total}</small>`;
+    b.onclick = ()=>{ active.has(k)?active.delete(k):active.add(k); render(); };
+    chipsEl.appendChild(b);
+  }
+}
+document.getElementById("allBtn").onclick = ()=>{
+  active = active.size===Object.keys(CATS).length ? new Set() : new Set(Object.keys(CATS)); render();
+};
+document.getElementById("q").addEventListener("input",e=>{ query = norm(e.target.value.trim()); render(); });
+
+// ---------- pines
+const NS = "http://www.w3.org/2000/svg";
+const pinsEl = document.getElementById("pins");
+let scaleNow = 1;
+function renderPins(){
+  pinsEl.innerHTML = "";
+  const r = Math.max(4.5, 9/Math.sqrt(scaleNow));
+  P.filter(visible).forEach(p=>{
+    const g = document.createElementNS(NS,"g");
+    g.setAttribute("class","pin"+(found[p.id]?" found":"")+(p.id===selId?" sel":""));
+    g.setAttribute("transform",`translate(${p.x} ${p.y})`);
+    g.innerHTML = `<circle class="ring" r="${r+3}" fill="none"/><circle class="b" r="${r}" fill="${CATS[p.c].c}" filter="url(#glow)"/><text style="font-size:${r*1.05}px">${CATS[p.c].i}</text>`;
+    g.addEventListener("click",ev=>{ ev.stopPropagation(); if(!moved) openCard(p.id,false); });
+    pinsEl.appendChild(g);
+  });
+}
+
+// ---------- lista
+const listEl = document.getElementById("list");
+function renderList(){
+  const items = P.filter(visible);
+  let html = `<div class="listHead"><span>${items.length} ubicaciones</span><label><input type="checkbox" id="pend" ${onlyPending?"checked":""}> Solo pendientes</label></div>`;
+  for(const k in CATS){
+    const sub = items.filter(p=>p.c===k); if(!sub.length) continue;
+    html += `<div class="listHead" style="position:static;color:${CATS[k].c};font-weight:700">${CATS[k].i} ${CATS[k].n}</div>`;
+    sub.forEach(p=>{
+      html += `<div class="li${found[p.id]?" found":""}" data-id="${p.id}"><div class="ic" style="background:${CATS[p.c].c}33">${CATS[p.c].i}</div><div><div class="t">${p.n}</div><div class="w">${p.w}</div></div><div class="ck">${found[p.id]?"✅":""}</div></div>`;
+    });
+  }
+  if(!items.length) html += `<div class="info">Nada con ese filtro. Prueba otra búsqueda o activa más categorías.</div>`;
+  html += `<div class="info">Datos recopilados de guías de la comunidad publicadas en los primeros días tras el lanzamiento (19 nov 2026). Algunas ubicaciones aún no están verificadas y pueden cambiar con parches. Web de fans sin relación con Rockstar Games.</div>`;
+  listEl.innerHTML = html;
+  listEl.querySelectorAll(".li").forEach(el=>el.onclick=()=>{ document.body.classList.remove("listMode"); setTab("map"); openCard(el.dataset.id,true); });
+  const pend = document.getElementById("pend"); if(pend) pend.onchange = e=>{ onlyPending = e.target.checked; render(); };
+}
+
+function renderProgress(){
+  const f = P.filter(p=>found[p.id]).length;
+  document.getElementById("pCount").textContent = `${f}/${P.length}`;
+  document.getElementById("pBar").style.width = (100*f/P.length)+"%";
+}
+function render(){ renderChips(); renderPins(); renderList(); renderProgress(); }
+
+// ---------- ficha
+const card = document.getElementById("card");
+function openCard(id,center){
+  const p = P.find(q=>q.id===id); if(!p) return;
+  selId = id;
+  const tags = (p.t||[]).map(t=>`<span class="tag${/perdible|vigilad|militar|polic|estrella|buscan/i.test(t)?" warn":""}">${t}</span>`).join("");
+  card.innerHTML = `<button class="x" aria-label="Cerrar">×</button>
+    <div class="cat" style="color:${CATS[p.c].c}">${CATS[p.c].i} ${CATS[p.c].n}</div>
+    <h2>${p.n}</h2><div class="where">📍 ${p.w}</div>
+    <div>${tags}</div>
+    <div class="row">${p.d}</div>
+    <div class="row"><b>Cómo:</b> ${p.h}</div>
+    <div class="row"><b>Premio:</b> ${p.r}</div>
+    <div class="actions"><button id="fBtn" class="${found[p.id]?"on":""}">${found[p.id]?"✅ Encontrado":"Marcar como encontrado"}</button></div>`;
+  card.classList.add("show");
+  card.querySelector(".x").onclick = closeCard;
+  card.querySelector("#fBtn").onclick = ()=>{ found[p.id] = !found[p.id]; if(!found[p.id]) delete found[p.id]; save(); render(); openCard(p.id,false); };
+  if(center) flyTo(p.x,p.y,Math.max(scaleNow,3));
+  renderPins();
+}
+function closeCard(){ card.classList.remove("show"); selId=null; renderPins(); }
+
+// ---------- pan / zoom
+const svg = document.getElementById("map");
+const W0 = 1000, H0 = 1080;
+let vb = {x:0,y:0,w:W0,h:H0};
+function applyVB(){
+  svg.setAttribute("viewBox",`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+  const ns = W0/vb.w; if(Math.abs(ns-scaleNow)/scaleNow>0.08){ scaleNow = ns; renderPins(); }
+}
+function clientToSvg(cx,cy){
+  const r = svg.getBoundingClientRect();
+  const s = Math.max(vb.w/r.width, vb.h/r.height);
+  const ox = (r.width*s - vb.w)/2, oy = (r.height*s - vb.h)/2;
+  return {x: vb.x + (cx-r.left)*s - ox, y: vb.y + (cy-r.top)*s - oy, s};
+}
+function zoomAt(cx,cy,f){
+  const p = clientToSvg(cx,cy);
+  let nw = Math.min(W0*1.2, Math.max(W0/14, vb.w/f)); f = vb.w/nw;
+  vb.x = p.x - (p.x - vb.x)/f; vb.y = p.y - (p.y - vb.y)/f; vb.w = nw; vb.h = vb.h/f; applyVB();
+}
+function flyTo(x,y,scale){
+  const tw = W0/scale, th = H0/scale, sx=vb.x, sy=vb.y, sw=vb.w, sh=vb.h, ex=x-tw/2, ey=y-th/2; let t0=null;
+  function step(ts){ if(!t0) t0=ts; let k=Math.min(1,(ts-t0)/350); k=1-Math.pow(1-k,3);
+    vb={x:sx+(ex-sx)*k,y:sy+(ey-sy)*k,w:sw+(tw-sw)*k,h:sh+(th-sh)*k}; applyVB(); if(k<1) requestAnimationFrame(step); }
+  requestAnimationFrame(step);
+}
+const ptrs = new Map(); let last = null, moved = false, pinchD = 0;
+svg.addEventListener("pointerdown",e=>{ svg.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); moved=false; last={x:e.clientX,y:e.clientY}; if(ptrs.size===2){ const [a,b]=[...ptrs.values()]; pinchD=Math.hypot(a.x-b.x,a.y-b.y);} svg.classList.add("drag"); });
+svg.addEventListener("pointermove",e=>{
+  if(!ptrs.has(e.pointerId)) return;
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===2){
+    const [a,b]=[...ptrs.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y);
+    if(pinchD){ zoomAt((a.x+b.x)/2,(a.y+b.y)/2,d/pinchD); } pinchD=d; moved=true; return;
+  }
+  const dx=e.clientX-last.x, dy=e.clientY-last.y;
+  if(Math.abs(dx)+Math.abs(dy)>3) moved=true;
+  const r = svg.getBoundingClientRect(); const s = Math.max(vb.w/r.width, vb.h/r.height);
+  vb.x -= dx*s; vb.y -= dy*s; last={x:e.clientX,y:e.clientY}; applyVB();
+});
+function up(e){ ptrs.delete(e.pointerId); pinchD=0; if(ptrs.size===1){ const v=[...ptrs.values()][0]; last={x:v.x,y:v.y}; } if(!ptrs.size) svg.classList.remove("drag"); setTimeout(()=>moved=false,30); }
+svg.addEventListener("pointerup",up); svg.addEventListener("pointercancel",up);
+svg.addEventListener("wheel",e=>{ e.preventDefault(); zoomAt(e.clientX,e.clientY,e.deltaY<0?1.2:1/1.2); },{passive:false});
+svg.addEventListener("click",()=>{ if(!moved && card.classList.contains("show")) closeCard(); });
+const mid = ()=>{ const r=svg.getBoundingClientRect(); return [r.left+r.width/2,r.top+r.height/2]; };
+document.getElementById("zin").onclick=()=>zoomAt(...mid(),1.5);
+document.getElementById("zout").onclick=()=>zoomAt(...mid(),1/1.5);
+document.getElementById("zreset").onclick=()=>flyTo(W0/2,H0/2,1);
+document.getElementById("goBase").onclick=()=>{ setTab("map"); active.add("mil"); render(); flyTo(318,1012,9); };
+
+// ---------- pestañas móvil
+function setTab(t){ document.getElementById("tMap").classList.toggle("act",t==="map"); document.getElementById("tList").classList.toggle("act",t==="list"); document.body.classList.toggle("listMode",t==="list"); }
+document.getElementById("tMap").onclick=()=>setTab("map");
+document.getElementById("tList").onclick=()=>setTab("list");
+
+render();
+</script>
+</body>
+</html>
